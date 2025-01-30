@@ -53,7 +53,7 @@ func handleListCertificate(w http.ResponseWriter, r *http.Request) {
 		results := []*CertInfo{}
 
 		for _, filename := range filenames {
-			certFilepath := filepath.Join(tlsCertManager.CertStore, filename+".pem")
+			certFilepath := filepath.Join(tlsCertManager.CertStore, filename+".crt")
 			//keyFilepath := filepath.Join(tlsCertManager.CertStore, filename+".key")
 			fileInfo, err := os.Stat(certFilepath)
 			if err != nil {
