@@ -249,7 +249,7 @@ func handleCertDownload(w http.ResponseWriter, r *http.Request) {
 
 	// check if the cert exists
 	pubKey := filepath.Join(filepath.Join("./conf/certs"), certname+".key")
-	priKey := filepath.Join(filepath.Join("./conf/certs"), certname+".pem")
+	priKey := filepath.Join(filepath.Join("./conf/certs"), certname+".crt")
 
 	if utils.FileExists(pubKey) && utils.FileExists(priKey) {
 		//Zip them and serve them via http download
@@ -306,7 +306,7 @@ func handleCertUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if keytype == "pub" {
-		overWriteFilename = domain + ".pem"
+		overWriteFilename = domain + ".crt"
 	} else if keytype == "pri" {
 		overWriteFilename = domain + ".key"
 	} else {
