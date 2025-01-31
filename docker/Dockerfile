@@ -12,7 +12,7 @@ RUN go mod tidy &&\
     go build -o /usr/local/bin/zoraxy &&\
     chmod 755 /usr/local/bin/zoraxy
 
-FROM docker.io/ubuntu:latest AS build-zerotier
+FROM docker.io/ubuntu:22.04 AS build-zerotier
 
 RUN mkdir -p /opt/zerotier/source/ &&\
     mkdir -p /usr/local/bin/
@@ -29,7 +29,7 @@ RUN curl -Lo ZeroTierOne.tar.gz https://codeload.github.com/zerotier/ZeroTierOne
     mv ./zerotier-one /usr/local/bin/zerotier-one &&\
     chmod 755 /usr/local/bin/zerotier-one
 
-FROM docker.io/ubuntu:latest
+FROM docker.io/ubuntu:22.04
 
 RUN apt-get update -y &&\
     apt-get install -y bash sudo netcat-openbsd libssl-dev ca-certificates
