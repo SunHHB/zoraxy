@@ -191,7 +191,24 @@ func (router *Router) StartProxyService() error {
 							w.Write([]byte("400 - Bad Request"))
 						} else {
 							//No defined sub-domain
-							http.NotFound(w, r)
+							if router.Root.DefaultSiteOption == DefaultSite_NoResponse {
+								//No response. Just close the connection
+								hijacker, ok := w.(http.Hijacker)
+								if !ok {
+									w.Header().Set("Connection", "close")
+									return
+								}
+								conn, _, err := hijacker.Hijack()
+								if err != nil {
+									w.Header().Set("Connection", "close")
+									return
+								}
+								conn.Close()
+							} else {
+								//Default behavior
+								http.NotFound(w, r)
+							}
+
 						}
 
 					}
@@ -297,7 +314,7 @@ func (router *Router) Restart() error {
 			return err
 		}
 
-		time.Sleep(800 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		// Start the server
 		err = router.StartProxyService()
 		if err != nil {
@@ -337,7 +354,7 @@ func (router *Router) LoadProxy(matchingDomain string) (*ProxyEndpoint, error) {
 			return true
 		}
 
-		if key == matchingDomain {
+		if key == strings.ToLower(matchingDomain) {
 			targetProxyEndpoint = v
 		}
 		return true

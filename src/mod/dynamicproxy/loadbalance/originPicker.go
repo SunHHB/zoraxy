@@ -13,49 +13,75 @@ import (
 	by this request.
 */
 
+const (
+	STICKY_SESSION_NAME = "zr_sticky_session"
+)
+
 // GetRequestUpstreamTarget return the upstream target where this
 // request should be routed
 func (m *RouteManager) GetRequestUpstreamTarget(w http.ResponseWriter, r *http.Request, origins []*Upstream, useStickySession bool) (*Upstream, error) {
 	if len(origins) == 0 {
 		return nil, errors.New("no upstream is defined for this host")
 	}
-	var targetOrigin = origins[0]
+
+	//Pick the origin
 	if useStickySession {
 		//Use stick session, check which origins this request previously used
 		targetOriginId, err := m.getSessionHandler(r, origins)
 		if err != nil {
-			//No valid session found. Assign a new upstream
+			// No valid session found or origin is offline
+			// Filter the offline origins
+			origins = m.FilterOfflineOrigins(origins)
+			if len(origins) == 0 {
+				return nil, errors.New("no online upstream is available for origin: " + r.Host)
+			}
+
+			//Get a random origin
 			targetOrigin, index, err := getRandomUpstreamByWeight(origins)
 			if err != nil {
 				m.println("Unable to get random upstream", err)
 				targetOrigin = origins[0]
 				index = 0
 			}
+
+			//fmt.Println("DEBUG: (Sticky Session) Registering session origin " + origins[index].OriginIpOrDomain)
 			m.setSessionHandler(w, r, targetOrigin.OriginIpOrDomain, index)
 			return targetOrigin, nil
 		}
 
-		//Valid session found. Resume the previous session
+		//Valid session found and origin is online
+		//fmt.Println("DEBUG: (Sticky Session) Picking origin " + origins[targetOriginId].OriginIpOrDomain)
 		return origins[targetOriginId], nil
-	} else {
-		//Do not use stick session. Get a random one
-		var err error
-		targetOrigin, _, err = getRandomUpstreamByWeight(origins)
-		if err != nil {
-			m.println("Failed to get next origin", err)
-			targetOrigin = origins[0]
-		}
+	}
 
+	//No sticky session, get a random origin
+	//Filter the offline origins
+	origins = m.FilterOfflineOrigins(origins)
+	if len(origins) == 0 {
+		return nil, errors.New("no online upstream is available for origin: " + r.Host)
+	}
+
+	//Get a random origin
+	targetOrigin, _, err := getRandomUpstreamByWeight(origins)
+	if err != nil {
+		m.println("Failed to get next origin", err)
+		targetOrigin = origins[0]
 	}
 
 	//fmt.Println("DEBUG: Picking origin " + targetOrigin.OriginIpOrDomain)
 	return targetOrigin, nil
 }
 
+// GetUsableUpstreamCounts return the number of usable upstreams
+func (m *RouteManager) GetUsableUpstreamCounts(origins []*Upstream) int {
+	origins = m.FilterOfflineOrigins(origins)
+	return len(origins)
+}
+
 /* Features related to session access */
 //Set a new origin for this connection by session
 func (m *RouteManager) setSessionHandler(w http.ResponseWriter, r *http.Request, originIpOrDomain string, index int) error {
-	session, err := m.SessionStore.Get(r, "STICKYSESSION")
+	session, err := m.SessionStore.Get(r, STICKY_SESSION_NAME)
 	if err != nil {
 		return err
 	}
@@ -73,7 +99,7 @@ func (m *RouteManager) setSessionHandler(w http.ResponseWriter, r *http.Request,
 // Get the previous connected origin from session
 func (m *RouteManager) getSessionHandler(r *http.Request, upstreams []*Upstream) (int, error) {
 	// Get existing session
-	session, err := m.SessionStore.Get(r, "STICKYSESSION")
+	session, err := m.SessionStore.Get(r, STICKY_SESSION_NAME)
 	if err != nil {
 		return -1, err
 	}
@@ -82,19 +108,26 @@ func (m *RouteManager) getSessionHandler(r *http.Request, upstreams []*Upstream)
 	originDomainRaw := session.Values["zr_sid_origin"]
 	originIDRaw := session.Values["zr_sid_index"]
 
-	if originDomainRaw == nil || originIDRaw == nil {
+	if originDomainRaw == nil || originIDRaw == nil || originIDRaw == -1 {
 		return -1, errors.New("no session has been set")
 	}
 	originDomain := originDomainRaw.(string)
-	originID := originIDRaw.(int)
+	//originID := originIDRaw.(int)
 
-	//Check if it has been modified
-	if len(upstreams) < originID || upstreams[originID].OriginIpOrDomain != originDomain {
-		//Mismatch or upstreams has been updated
-		return -1, errors.New("upstreams has been changed")
+	//Check if the upstream still exists
+	for i, upstream := range upstreams {
+		if upstream.OriginIpOrDomain == originDomain {
+			if !m.IsTargetOnline(originDomain) {
+				//Origin is offline
+				return -1, errors.New("origin is offline")
+			}
+
+			//Ok, the origin is still online
+			return i, nil
+		}
 	}
 
-	return originID, nil
+	return -1, errors.New("origin is no longer exists")
 }
 
 /* Functions related to random upstream picking */
@@ -157,21 +190,3 @@ func getRandomUpstreamByWeight(upstreams []*Upstream) (*Upstream, int, error) {
 
 	return nil, -1, errors.New("failed to pick an upstream origin server")
 }
-
-// IntRange returns a random integer in the range from min to max.
-/*
-func intRange(min, max int) (int, error) {
-	var result int
-	switch {
-	case min > max:
-		// Fail with error
-		return result, errors.New("min is greater than max")
-	case max == min:
-		result = max
-	case max > min:
-		b := rand.Intn(max-min) + min
-		result = min + int(b)
-	}
-	return result, nil
-}
-*/

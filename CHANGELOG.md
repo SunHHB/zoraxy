@@ -1,3 +1,44 @@
+# v3.1.9 1 Mar 2025
+
++ Fixed netstat underflow bug
++ Fixed origin picker cookie bug [#550](https://github.com/tobychui/zoraxy/issues/550)
++ Added prototype plugin system
++ Added plugin examples
++ Added notice for build-in Zerotier network controller deprecation (and will be moved to plugins)
++ Added country code display for quickban list [#247](https://github.com/tobychui/zoraxy/issues/247)
++ Removed passive load balancer and default to active lb only [#554](https://github.com/tobychui/zoraxy/issues/554)
+
+
+# v3.1.8 16 Feb 2025
+
++ Exposed timeout value from dpcore to UI
++ Added active load balancing (if uptime monitor is enabled on that rule)
++ Re-factorized io stats and remove dependencies over wmic by [eyerrock](https://github.com/eyerrock)
++ Removed SMTP input validation [#497](https://github.com/tobychui/zoraxy/issues/497)
++ Fixed sticky session bug
++ Fixed passive load balancer bug
++ Fixed dockerfile bug by [PassiveLemon](https://github.com/PassiveLemon)
+
+# v3.1.7 08 Feb 2025
+
++ Merged and added new tagging system for HTTP Proxy rules [by @adoolaard](https://github.com/adoolaard)
++ Added inline editing for redirection rules [#510](https://github.com/tobychui/zoraxy/issues/510)
++ Added uptime monitor status dot detail info (now clickable) [#467](https://github.com/tobychui/zoraxy/issues/467)
++ Added close connection support to port 80 listener [#405](https://github.com/tobychui/zoraxy/issues/450)
++ Optimized port collision check on startup
++ Optimized dark theme color scheme (Free consultation by 3S Design studio)
++ Fixed capital letter rule unable to delete bug [#507](https://github.com/tobychui/zoraxy/issues/507)
++ Fixed docker statistic not save bug [by @PassiveLemon](https://github.com/PassiveLemon) [#505](https://github.com/tobychui/zoraxy/issues/505)
+
+
+# v3.1.6 31 Dec 2024
+
+
++ Exposed log file, sys.uuid and static web server path to start flag (customizable conf and sys.db path is still wip)
++ Optimized connection close implementation
++ Added toggle for uptime monitor
++ Added optional copy HTTP custom headers to websocket connection [#444](https://github.com/tobychui/zoraxy/issues/444)
+
 # v3.1.5 28 Dec 2024
 
 + Fixed hostname case sensitive bug [#435](https://github.com/tobychui/zoraxy/issues/435)
